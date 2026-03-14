@@ -1,0 +1,27 @@
+package com.xspaceagi.agent.core.infra.component.workflow.handler;
+
+import com.xspaceagi.agent.core.adapter.dto.PluginExecuteResultDto;
+import com.xspaceagi.agent.core.adapter.dto.config.plugin.PluginConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.workflow.PluginNodeConfigDto;
+import com.xspaceagi.agent.core.adapter.dto.config.workflow.WorkflowNodeDto;
+import com.xspaceagi.agent.core.infra.component.plugin.PluginContext;
+import com.xspaceagi.agent.core.infra.component.workflow.WorkflowContext;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
+
+public class PluginNodeHandler extends AbstractNodeHandler {
+
+    @Override
+    public Mono<Object> execute(WorkflowContext workflowContext, WorkflowNodeDto node) {
+        PluginNodeConfigDto pluginNodeConfigDto = (PluginNodeConfigDto) node.getNodeConfig();
+        PluginContext pluginContext = new PluginContext();
+        pluginContext.setAgentContext(workflowContext.getAgentContext());
+        pluginContext.setRequestId(workflowContext.getRequestId());
+        pluginContext.setPluginConfig((PluginConfigDto) pluginNodeConfigDto.getPluginConfig().getConfig());
+        pluginContext.setPluginDto(pluginNodeConfigDto.getPluginConfig());
+        Map<String, Object> params = extraBindValueMap(workflowContext, node, pluginNodeConfigDto.getInputArgs());
+        pluginContext.setParams(params);
+        return workflowContext.getWorkflowContextServiceHolder().getPluginExecutor().execute(pluginContext).map(PluginExecuteResultDto::getResult);
+    }
+}
